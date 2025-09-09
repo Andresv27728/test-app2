@@ -8,18 +8,29 @@ export default {
     description: 'Obtiene el token de tu sesión de sub-bot.',
 
     async execute({ sock: conn, msg: m }) {
-        const userJid = m.sender;
-        const subBotDir = path.join(process.cwd(), 'sub-bots', userJid.split('@')[0]);
-        const credsPath = path.join(subBotDir, 'creds.json');
+        const ownerJid = m.sender;
+        const subBot = (global.subBots || []).find(bot => bot.owner === ownerJid);
+
+        if (!subBot) {
+            return conn.sendMessage(m.key.remoteJid, { text: "No tienes una sesión de sub-bot activa. Usa el comando `code` para crear una." }, { quoted: m });
+        }
+
+        const subBotPhoneNumber = subBot.jid.split('@')[0];
+        const credsPath = path.join(process.cwd(), 'sub-bots', subBotPhoneNumber, 'creds.json');
 
         if (fs.existsSync(credsPath)) {
             const token = Buffer.from(fs.readFileSync(credsPath, 'utf-8')).toString('base64');
-            await conn.sendMessage(userJid, { text: `Tu token de sesión es:\n\n\`\`\`${token}\`\`\`` });
-            if (m.key.remoteJid !== userJid) {
-                await conn.sendMessage(m.key.remoteJid, { text: "Te he enviado tu token por mensaje privado." }, { quoted: m });
+            try {
+                await conn.sendMessage(ownerJid, { text: `Tu token de sesión para el sub-bot ${subBotPhoneNumber} es:\n\n\`\`\`${token}\`\`\`` });
+                if (m.key.remoteJid !== ownerJid) {
+                    await conn.sendMessage(m.key.remoteJid, { text: "Te he enviado tu token por mensaje privado." }, { quoted: m });
+                }
+            } catch (e) {
+                console.error("Failed to send token to user privately:", e);
+                await conn.sendMessage(m.key.remoteJid, { text: "No pude enviarte el token por privado. Asegúrate de haber iniciado una conversación conmigo." }, { quoted: m });
             }
         } else {
-            await conn.sendMessage(m.key.remoteJid, { text: "No tienes una sesión de sub-bot activa. Usa el comando `serbot` para crear una." }, { quoted: m });
+            await conn.sendMessage(m.key.remoteJid, { text: "No se encontró el archivo de credenciales para tu sesión de sub-bot." }, { quoted: m });
         }
     }
 }

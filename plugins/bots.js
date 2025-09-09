@@ -1,5 +1,3 @@
-import config from '../config.js';
-
 export default {
     name: 'bots',
     aliases: ['listbots', 'subbots'],
@@ -16,11 +14,14 @@ export default {
         let response = `*Sub-Bots Conectados:*\n\n`;
         subBots.forEach((bot, index) => {
             const botUser = bot.sock.user;
-            const name = botUser.name || 'Sin Nombre';
-            const jid = botUser.id;
-            response += `${index + 1}. *Nombre:* ${name}\n   *JID:* ${jid}\n   *Owner:* ${bot.owner}\n\n`;
+            if (botUser) {
+                const name = botUser.name || 'Sin Nombre';
+                const jid = botUser.id;
+                response += `${index + 1}. *Nombre:* ${name}\n   *JID:* ${jid}\n   *Owner:* @${bot.owner.split('@')[0]}\n\n`;
+            }
         });
 
-        await conn.sendMessage(m.key.remoteJid, { text: response.trim() }, { quoted: m });
+        const mentions = subBots.map(bot => bot.owner);
+        await conn.sendMessage(m.key.remoteJid, { text: response.trim(), mentions }, { quoted: m });
     }
 }
