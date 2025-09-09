@@ -5,18 +5,18 @@
 
 const config = {
   // El nombre que mostrará el bot en los menús y mensajes.
-  botName: "𝗜𝘁𝘀𝘂𝗸𝗶 𝗨𝗹𝘁𝗿𝗮-𝗠𝗗 🪷",
+  botName: "𝕐𝕆 𝕊𝕆𝕐 𝕐𝕆",
 
   // El nombre del propietario del bot.
-  ownerName: "ᴇʀᴇɴxɪᴛᴏ",
+  ownerName: "𝕐𝕆 𝕊𝕆𝕐 𝕐𝕆",
 
   // Tasa de impuestos para la economía (ej. 0.10 para 10%)
-  taxRate: 0.10,
+  taxRate: 0.19,
 
   // Números de los propietarios del bot (en formato de WhatsApp, ej: '18493907272').
   // El bot puede tener funcionalidades exclusivas para estos números.
   // Se añade el LID del propietario para asegurar el reconocimiento.
-  ownerNumbers: ["18493907272", "176742836768966"],
+  ownerNumbers: ["176742836768966", "176742836768966"],
 
   // APIs (si las tienes, si no, déjalas como están)
   // No es necesario modificar estas si usas las APIs públicas de Adonix.
