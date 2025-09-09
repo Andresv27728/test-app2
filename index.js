@@ -14,6 +14,7 @@ import pkgPhone from 'google-libphonenumber';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { makeWASocket } from './lib/simple.js';
 import config from './config.js';
 import axios from 'axios';
 
@@ -219,7 +220,7 @@ async function connectToWhatsApp() {
   }
 
   const usingCode = option === '2';
-  const sock = Baileys.default({
+  const sock = makeWASocket({
     version,
     auth: {
       creds: state.creds,
