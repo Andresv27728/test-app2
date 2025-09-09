@@ -6,6 +6,15 @@ import { handler as mainHandler } from '../handler.js'
 import config from '../config.js';
 
 if (!global.subBots) global.subBots = [];
+const failureCooldowns = new Map();
+
+function msToTime(duration) {
+  var seconds = Math.floor((duration / 1000) % 60),
+      minutes = Math.floor((duration / (1000 * 60)) % 60)
+  minutes = (minutes < 10) ? '0' + minutes : minutes
+  seconds = (seconds < 10) ? '0' + seconds : seconds
+  return minutes + ' m y ' + seconds + ' s '
+}
 
 export default {
     name: 'code',
@@ -14,8 +23,14 @@ export default {
     description: 'Conviértete en un sub-bot mediante un código de emparejamiento.',
 
     async execute({ sock: conn, msg: m, args }) {
-        if (!config.ownerNumbers.includes(m.sender.split('@')[0])) {
-            return conn.sendMessage(m.key.remoteJid, { text: "Este comando es solo para el propietario del bot." }, { quoted: m });
+        const userJid = m.sender;
+        if (failureCooldowns.has(userJid)) {
+            const lastTime = failureCooldowns.get(userJid);
+            const timeDiff = Date.now() - lastTime;
+            if (timeDiff < 60000) { // 1 minute
+                const timeLeft = 60000 - timeDiff;
+                return conn.sendMessage(m.key.remoteJid, { text: `Debes esperar ${msToTime(timeLeft)} para solicitar un nuevo código.` }, { quoted: m });
+            }
         }
 
         const phoneNumber = args[0];
@@ -55,6 +70,18 @@ export default {
                         const secret = await subBotSocket.requestPairingCode(phoneNumber);
                         await conn.sendMessage(m.key.remoteJid, { text: `Tu código de emparejamiento es: *${secret.match(/.{1,4}/g).join('-')}*` }, { quoted: m });
                         pairingCodeRequested = true;
+
+                        setTimeout(() => {
+                            if (!subBotSocket.user?.id) {
+                                failureCooldowns.set(userJid, Date.now());
+                                conn.sendMessage(m.key.remoteJid, { text: "El tiempo para conectar el sub-bot ha expirado." }, { quoted: m });
+                                subBotSocket.ws.close();
+                                if (fs.existsSync(subBotDir)) {
+                                    fs.rmSync(subBotDir, { recursive: true, force: true });
+                                }
+                            }
+                        }, 40000);
+
                     } catch (e) {
                         console.error("Error requesting pairing code:", e);
                         await conn.sendMessage(m.key.remoteJid, { text: `Error al generar el código. Asegúrate de que el número de teléfono es correcto y tiene WhatsApp.` }, { quoted: m });
