@@ -13,11 +13,15 @@ export default {
 
         let response = `*Sub-Bots Conectados:*\n\n`;
         subBots.forEach((bot, index) => {
-            const botUser = bot.sock.user;
-            if (botUser) {
-                const name = botUser.name || 'Sin Nombre';
-                const jid = botUser.id;
-                response += `${index + 1}. *Nombre:* ${name}\n   *JID:* ${jid}\n   *Owner:* @${bot.owner.split('@')[0]}\n\n`;
+            if (bot && bot.sock) {
+                const botUser = bot.sock.user;
+                if (botUser) {
+                    const name = botUser.name || 'Sin Nombre';
+                    const jid = botUser.id;
+                    response += `${index + 1}. *Nombre:* ${name}\n   *JID:* ${jid}\n   *Owner:* @${bot.owner.split('@')[0]}\n   *Estado:* Conectado\n\n`;
+                } else {
+                    response += `${index + 1}. *JID:* (desconocido)\n   *Owner:* @${bot.owner.split('@')[0]}\n   *Estado:* Conectando...\n\n`;
+                }
             }
         });
 

@@ -20,8 +20,19 @@ export default {
 
         if (fs.existsSync(credsPath)) {
             const token = Buffer.from(fs.readFileSync(credsPath, 'utf-8')).toString('base64');
+            const message = `
+*Token de Sesión para Sub-Bot*
+
+Este es tu token de sesión para el número *${subBotPhoneNumber}*.
+Guárdalo en un lugar seguro. No lo compartas con nadie.
+
+Puedes usar este token para conectar tu sub-bot en otra instancia o si el bot principal se reinicia.
+
+*Tu Token:*
+\`\`\`${token}\`\`\`
+            `;
             try {
-                await conn.sendMessage(ownerJid, { text: `Tu token de sesión para el sub-bot ${subBotPhoneNumber} es:\n\n\`\`\`${token}\`\`\`` });
+                await conn.sendMessage(ownerJid, { text: message.trim() });
                 if (m.key.remoteJid !== ownerJid) {
                     await conn.sendMessage(m.key.remoteJid, { text: "Te he enviado tu token por mensaje privado." }, { quoted: m });
                 }
