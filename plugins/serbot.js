@@ -59,11 +59,11 @@ export default {
 
         const subBotSocket = Baileys.default(connectionOptions);
 
-        const waitForSocketOpen = async (timeoutMs = 30000) => {
+        const waitForConnection = async (timeoutMs = 60000) => {
             return new Promise((resolve, reject) => {
                 const start = Date.now();
                 const check = () => {
-                    if (subBotSocket.ws.readyState === 1) {
+                    if (subBotSocket.ws?.readyState === 1 && subBotSocket.authState?.creds?.noiseKey) {
                         resolve();
                     } else if (Date.now() - start > timeoutMs) {
                         reject(new Error("Timeout esperando la conexión del socket."));
@@ -110,7 +110,7 @@ export default {
                 mainHandler.call(subBotSocket, upsert, true);
             });
 
-            await waitForSocketOpen();
+            await waitForConnection();
 
             await conn.sendMessage(m.key.remoteJid, { text: `Generando código para +${phoneNumber}...` }, { quoted: m });
             const secret = await subBotSocket.requestPairingCode(phoneNumber);
