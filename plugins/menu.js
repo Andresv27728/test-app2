@@ -1,4 +1,4 @@
-// Mapa de emojis para las categorías
+// 🎀 Mapa de emojis para las categorías
 const categoryEmojis = {
   '𝗚𝗘𝗡𝗘𝗥𝗔𝗟': '📜',
   '𝗗𝗘𝗦𝗖𝗔𝗥𝗚𝗔𝗦': '📥',
@@ -9,9 +9,43 @@ const categoryEmojis = {
   '𝗛𝗘𝗥𝗥𝗔𝗠𝗜𝗘𝗡𝗧𝗔𝗦': '🛠️',
   '𝗜𝗡𝗙𝗢𝗥𝗠𝗔𝗖𝗜𝗢𝗡': '📚',
   '𝗦𝗨𝗕-𝗕𝗢𝗧𝗦': '🤖',
-  '𝗚𝗔𝗔𝗥𝗔-𝗜𝗔': '🧠',
+  '𝗜𝗔': '🧠',
   '𝗢𝗧𝗥𝗢𝗦': '⚙️'
 };
+
+// 🎨 30 estilos de bordes decorativos
+const borders = [
+  { top: "╭═══『", mid: "┃", bot: "╰═══════════════╯" },
+  { top: "┏━✦", mid: "┃", bot: "┗━━━━━━━━━━━━━━━┛" },
+  { top: "✦━━•", mid: "┃", bot: "•━━━━━━━━━━━━━✦" },
+  { top: "◆━❖", mid: "┃", bot: "❖━━━━━━━━━━━━━◆" },
+  { top: "◈──", mid: "┃", bot: "──◈" },
+  { top: "▣━", mid: "┃", bot: "━▣" },
+  { top: "✧━", mid: "┃", bot: "━✧" },
+  { top: "⊹⋙", mid: "┃", bot: "⋘⊹" },
+  { top: "✪━", mid: "┃", bot: "━✪" },
+  { top: "◉━", mid: "┃", bot: "━◉" },
+  { top: "✿━", mid: "┃", bot: "━✿" },
+  { top: "❖━", mid: "┃", bot: "━❖" },
+  { top: "➳━", mid: "┃", bot: "━➳" },
+  { top: "☯━", mid: "┃", bot: "━☯" },
+  { top: "✦⋆", mid: "┃", bot: "⋆✦" },
+  { top: "➸━", mid: "┃", bot: "━➸" },
+  { top: "♛━", mid: "┃", bot: "━♛" },
+  { top: "★━", mid: "┃", bot: "━★" },
+  { top: "♜━", mid: "┃", bot: "━♜" },
+  { top: "☠━", mid: "┃", bot: "━☠" },
+  { top: "♞━", mid: "┃", bot: "━♞" },
+  { top: "➶━", mid: "┃", bot: "━➶" },
+  { top: "✩━", mid: "┃", bot: "━✩" },
+  { top: "☾━", mid: "┃", bot: "━☽" },
+  { top: "✧━", mid: "┃", bot: "━✧" },
+  { top: "✦━", mid: "┃", bot: "━✦" },
+  { top: "♠━", mid: "┃", bot: "━♠" },
+  { top: "♣━", mid: "┃", bot: "━♣" },
+  { top: "♥━", mid: "┃", bot: "━♥" },
+  { top: "♦━", mid: "┃", bot: "━♦" }
+];
 
 const menuCommand = {
   name: "menu",
@@ -22,49 +56,48 @@ const menuCommand = {
   async execute({ sock, msg, commands, config }) {
     const categories = {};
 
+    // 🔀 Elegir un estilo aleatorio
+    const border = borders[Math.floor(Math.random() * borders.length)];
+
     // Agrupar comandos por categoría
     commands.forEach(command => {
       if (!command.category || command.name === 'test') return;
-
-      if (!categories[command.category]) {
-        categories[command.category] = [];
-      }
-
+      if (!categories[command.category]) categories[command.category] = [];
       categories[command.category].push(command);
     });
 
     // Ordenar categorías alfabéticamente
     const sortedCategories = Object.keys(categories).sort();
 
-    // --- Construcción del menú con tu decoración ---
-    let menuText = `╭━━━〔 𝙂𝘼𝘼𝙍𝘼 𝙐𝙇𝙏𝙍𝘼-𝙈𝘿 🩸 〕━━━╮\n`;
-    menuText += `┃ ➟ Hola Mortal: *${msg.pushName}*\n`;
-    menuText += `┃ ➟ Versión: *${config.version || '1.0.0'}*\n`;
-    menuText += `┃ ➟ Owner: *${config.ownerName}*\n`;
-    menuText += `╰━━━━━━━━━━━━━━━━━━━━━━━╯\n\n`;
+    // 🌸 --- Construcción del menú con decoración aleatoria ---
+    let menuText = `${border.top} 🎀 *MENU PRINCIPAL* 🎀 』\n`;
+    menuText += `${border.mid} ✨ Hola, *${msg.pushName}*\n`;
+    menuText += `${border.mid} ⚙️ Versión: *${config.version || '1.0.0'}*\n`;
+    menuText += `${border.mid} 👑 Owner: *${config.ownerName}*\n`;
+    menuText += `${border.bot}\n\n`;
 
     for (const category of sortedCategories) {
-      const emoji = categoryEmojis[category] || categoryEmojis['default'];
-      menuText += `╭─〔 ${emoji} ${category.toUpperCase()} 〕\n`;
+      const emoji = categoryEmojis[category] || '✨';
+      menuText += `${border.top} ${emoji} *${category.toUpperCase()}* 』\n`;
 
       const commandList = categories[category]
-        .filter((cmd, index, self) => self.findIndex(c => c.name === cmd.name) === index) // evitar duplicados
-        .map(cmd => `┃ ➺ ${cmd.name}`)
+        .filter((cmd, index, self) => self.findIndex(c => c.name === cmd.name) === index)
+        .map(cmd => `${border.mid} ⤷ ${cmd.name}`)
         .join('\n');
 
       menuText += `${commandList}\n`;
-      menuText += `╰━━━━━━━━━━━━━━━━━━━╯\n\n`;
+      menuText += `${border.bot}\n\n`;
     }
 
-    menuText += `╭━━━〔 👑 𝗜𝗡𝗧𝗥𝗢 𝗙𝗜𝗡𝗔𝗟 〕━━━╮\n`;
-    menuText += `┃ ➺ Bot creado por: *${config.ownerName}*\n`;
-    menuText += `┃ ➺ Disfruta de : 𝙂𝘼𝘼𝙍𝘼 𝙐𝙇𝙏𝙍𝘼-𝙈𝘿 🩸 \n`;
-    menuText += `╰━━━━━━━━━━━━━━━━━━━━━━━╯`;
+    menuText += `${border.top} 👑 *CREDITOS* 👑 』\n`;
+    menuText += `${border.mid} 💎 Creado por: *${config.ownerName}*\n`;
+    menuText += `${border.mid} 🎉 Disfruta de: *BOT DE YO SOY YO*\n`;
+    menuText += `${border.bot}`;
 
     await sock.sendMessage(
       msg.key.remoteJid,
       {
-        image: { url: 'https://files.catbox.moe/vm9t7c.jpg' },
+        image: { url: 'https://files.catbox.moe/itgz1x.png' },
         caption: menuText,
         mimetype: 'image/png'
       },
