@@ -40,57 +40,46 @@ export default {
 
         const subBotDir = path.join(process.cwd(), 'sub-bots', phoneNumber);
 
-        const start = async () => {
-            if (fs.existsSync(subBotDir)) {
-                fs.rmSync(subBotDir, { recursive: true, force: true });
-            }
-            fs.mkdirSync(subBotDir, { recursive: true });
+        if (fs.existsSync(subBotDir)) {
+            fs.rmSync(subBotDir, { recursive: true, force: true });
+        }
+        fs.mkdirSync(subBotDir, { recursive: true });
 
-            const { state, saveCreds } = await useMultiFileAuthState(subBotDir);
-            const { version } = await fetchLatestBaileysVersion();
+        const { state, saveCreds } = await useMultiFileAuthState(subBotDir);
+        const { version } = await fetchLatestBaileysVersion();
 
-            const connectionOptions = {
-                logger: pino({ level: "fatal" }),
-                printQRInTerminal: false,
-                auth: { creds: state.creds, keys: makeCacheableSignalKeyStore(state.keys, pino({ level: 'silent' })) },
-                browser: Browsers.macOS("Chrome"),
-                version: version,
-                generateHighQualityLinkPreview: true
-            };
+        const connectionOptions = {
+            logger: pino({ level: "fatal" }),
+            printQRInTerminal: false,
+            auth: { creds: state.creds, keys: makeCacheableSignalKeyStore(state.keys, pino({ level: 'silent' })) },
+            browser: Browsers.macOS("Chrome"),
+            version: version,
+            generateHighQualityLinkPreview: true
+        };
 
-            const subBotSocket = Baileys.default(connectionOptions);
+        const subBotSocket = Baileys.default(connectionOptions);
 
-            let pairingCodeRequested = false;
+        const waitForSocketOpen = async (timeoutMs = 30000) => {
+            return new Promise((resolve, reject) => {
+                const start = Date.now();
+                const check = () => {
+                    if (subBotSocket.ws.readyState === 1) {
+                        resolve();
+                    } else if (Date.now() - start > timeoutMs) {
+                        reject(new Error("Timeout esperando la conexión del socket."));
+                    } else {
+                        setTimeout(check, 250);
+                    }
+                };
+                check();
+            });
+        };
+
+        try {
+            await conn.sendMessage(m.key.remoteJid, { text: `Iniciando conexión para +${phoneNumber}...` }, { quoted: m });
+
             subBotSocket.ev.on('connection.update', async (update) => {
                 const { connection, lastDisconnect } = update;
-
-                if(connection === 'connecting' && !pairingCodeRequested) {
-                    await conn.sendMessage(m.key.remoteJid, { text: `Generando código para +${phoneNumber}...` }, { quoted: m });
-                    try {
-                        const secret = await subBotSocket.requestPairingCode(phoneNumber);
-                        await conn.sendMessage(m.key.remoteJid, { text: `Tu código de emparejamiento es: *${secret.match(/.{1,4}/g).join('-')}*` }, { quoted: m });
-                        pairingCodeRequested = true;
-
-                        setTimeout(() => {
-                            if (!subBotSocket.user?.id) {
-                                failureCooldowns.set(userJid, Date.now());
-                                conn.sendMessage(m.key.remoteJid, { text: "El tiempo para conectar el sub-bot ha expirado." }, { quoted: m });
-                                subBotSocket.ws.close();
-                                if (fs.existsSync(subBotDir)) {
-                                    fs.rmSync(subBotDir, { recursive: true, force: true });
-                                }
-                            }
-                        }, 40000);
-
-                    } catch (e) {
-                        console.error("Error requesting pairing code:", e);
-                        await conn.sendMessage(m.key.remoteJid, { text: `Error al generar el código. Asegúrate de que el número de teléfono es correcto y tiene WhatsApp.` }, { quoted: m });
-                        if (fs.existsSync(subBotDir)) {
-                            fs.rmSync(subBotDir, { recursive: true, force: true });
-                        }
-                    }
-                }
-
                 if (connection === 'open') {
                     const existingBotIndex = global.subBots.findIndex(bot => bot.jid === subBotSocket.user.id);
                     if (existingBotIndex > -1) {
@@ -106,12 +95,12 @@ export default {
                         global.subBots.splice(index, 1);
                     }
                     if ((lastDisconnect.error)?.output?.statusCode !== DisconnectReason.loggedOut) {
-                        // It will try to reconnect automatically
+                        // Reconnection will be attempted automatically by Baileys
                     } else {
                         if (fs.existsSync(subBotDir)) {
                             fs.rmSync(subBotDir, { recursive: true, force: true });
                         }
-                        await conn.sendMessage(m.key.remoteJid, { text: `Conexión de sub-bot cerrada permanentemente.` }, { quoted: m });
+                        await conn.sendMessage(m.key.remoteJid, { text: `Conexión de sub-bot para ${phoneNumber} cerrada permanentemente.` }, { quoted: m });
                     }
                 }
             });
@@ -120,14 +109,30 @@ export default {
             subBotSocket.ev.on('messages.upsert', (upsert) => {
                 mainHandler.call(subBotSocket, upsert, true);
             });
-        }
 
-        await start().catch(async (e) => {
+            await waitForSocketOpen();
+
+            await conn.sendMessage(m.key.remoteJid, { text: `Generando código para +${phoneNumber}...` }, { quoted: m });
+            const secret = await subBotSocket.requestPairingCode(phoneNumber);
+            await conn.sendMessage(m.key.remoteJid, { text: `Tu código de emparejamiento es: *${secret.match(/.{1,4}/g).join('-')}*` }, { quoted: m });
+
+            setTimeout(() => {
+                if (!subBotSocket.user?.id) {
+                    failureCooldowns.set(userJid, Date.now());
+                    conn.sendMessage(m.key.remoteJid, { text: `El tiempo para conectar el sub-bot (+${phoneNumber}) ha expirado.` }, { quoted: m });
+                    subBotSocket.ws.close();
+                    if (fs.existsSync(subBotDir)) {
+                        fs.rmSync(subBotDir, { recursive: true, force: true });
+                    }
+                }
+            }, 40000);
+
+        } catch (e) {
             console.error(e);
             if (fs.existsSync(subBotDir)) {
                 fs.rmSync(subBotDir, { recursive: true, force: true });
             }
-            await conn.sendMessage(m.key.remoteJid, { text: `Error al crear el sub-bot. Inténtalo de nuevo.` }, { quoted: m });
-        });
+            await conn.sendMessage(m.key.remoteJid, { text: `Error al crear el sub-bot: ${e.message}` }, { quoted: m });
+        }
     }
 }
