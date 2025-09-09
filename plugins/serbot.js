@@ -53,7 +53,9 @@ export default {
                     await conn.sendMessage(m.key.remoteJid, { text: `Generando código para +${phoneNumber}...` }, { quoted: m });
                     try {
                         const secret = await subBotSocket.requestPairingCode(phoneNumber);
-                        await conn.sendMessage(m.key.remoteJid, { text: `Tu código de emparejamiento es: *${secret.match(/.{1,4}/g).join('-')}*` }, { quoted: m });
+                        const formattedSecret = secret.match(/.{1,4}/g).join('-');
+                        await conn.sendMessage(m.key.remoteJid, { text: `Aquí está tu código de emparejamiento. Cópialo y pégalo en tu dispositivo.` }, { quoted: m });
+                        await conn.sendMessage(m.key.remoteJid, { text: formattedSecret }, { quoted: m });
                         pairingCodeRequested = true;
                     } catch (e) {
                         console.error("Error requesting pairing code:", e);
